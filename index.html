@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOB-AI - هوش مصنوعی چندمدلی</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --success: #48bb78;
+            --danger: #f56565;
+            --warning: #ed8936;
+            --dark: #1a202c;
+            --light: #f7fafc;
+            --gray: #718096;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Vazir', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body.en {
+            direction: ltr;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: bgMove 20s linear infinite;
+        }
+
+        @keyframes bgMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-screen.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(26, 32, 44, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-item {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-item:hover {
+            color: white;
+        }
+
+        .btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* Language Switcher */
+        .lang-switcher {
+            position: relative;
+        }
+
+        .lang-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+        }
+
+        /* Auth Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(26, 32, 44, 0.95);
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        body.en .close-modal {
+            right: 1rem;
+            left: auto;
+        }
+
+        .close-modal:hover {
+            opacity: 1;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* Main App Container */
+        .app-container {
+            margin-top: 80px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 2rem;
+            min-height: calc(100vh - 80px);
+            display: none;
+        }
+
+        .app-container.show {
+            display: block;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            background: rgba(26, 32, 44, 0.8);
+            border-radius: 20px;
+            height: calc(100vh - 140px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .chat-header {
+            padding: 1.5rem;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .model-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .model-badge {
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .model-badge.auto {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 1rem 1.5rem;
+            border-radius: 15px;
+            position: relative;
+            animation: messageSlide 0.3s ease;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        body.en .message.user {
+            margin-left: 0;
+            margin-right: auto;
+            align-self: flex-start;
+        }
+
+        .message.ai {
+            background: rgba(255,255,255,0.1);
+            align-self: flex-start;
+        }
+
+        body.en .message.ai {
+            align-self: flex-end;
+        }
+
+        .message-meta {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 0.3rem;
+            padding: 1rem;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 50%;
+            animation: typingDot 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .chat-input-container {
+            padding: 1.5rem;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 1rem;
+            border-radius: 25px;
+            color: white;
+            font-size: 1rem;
+            resize: none;
+            max-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .send-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Stats Dashboard */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(26, 32, 44, 0.8);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-info h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-info p {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* Landing Page */
+        .landing-container {
+            min-height: calc(100vh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .landing-container.hide {
+            display: none;
+        }
+
+        .hero-content {
+            max-width: 800px;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, white, rgba(255,255,255,0.8));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: rgba(255,255,255,0.1);
+            padding: 2rem;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                position: fixed;
+                top: 70px;
+                right: -100%;
+                width: 80%;
+                height: calc(100vh - 70px);
+                background: rgba(26, 32, 44, 0.98);
+                flex-direction: column;
+                padding: 2rem;
+                transition: right 0.3s ease;
+            }
+
+            body.en .nav-menu {
+                right: auto;
+                left: -100%;
+            }
+
+            .nav-menu.active {
+                right: 0;
+            }
+
+            body.en .nav-menu.active {
+                left: 0;
+                right: auto;
+            }
+
+            .menu-toggle {
+                display: block;
+                background: none;
+                border: none;
+                color: white;
+                font-size: 1.5rem;
+                cursor: pointer;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Background Animation -->
+    <div class="bg-animation"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo" onclick="showLanding()">
+                <div class="logo-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <span>NOB-AI</span>
+            </a>
+
+            <div class="nav-menu" id="navMenu">
+                <a href="#" class="nav-item" onclick="showLanding()">
+                    <i class="fas fa-home"></i>
+                    <span data-lang="home">خانه</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showChat()" id="chatLink" style="display: none;">
+                    <i class="fas fa-comments"></i>
+                    <span data-lang="chat">چت</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-info-circle"></i>
+                    <span data-lang="about">درباره ما</span>
+                </a>
+                <div class="lang-switcher">
+                    <button class="lang-btn" onclick="toggleLanguage()">
+                        <i class="fas fa-globe"></i>
+                        <span id="langText">FA</span>
+                    </button>
+                </div>
+                <button class="btn btn-primary" onclick="showAuthModal('login')" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span data-lang="login">ورود</span>
+                </button>
+                <button class="btn btn-secondary" onclick="logout()" id="logoutBtn" style="display: none;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span data-lang="logout">خروج</span>
+                </button>
+            </div>
+
+            <button class="menu-toggle" onclick="toggleMenu()" style="display: none;">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Auth Modal -->
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeAuthModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 id="authTitle" style="margin-bottom: 2rem; text-align: center;">ورود به سیستم</h2>
+            
+            <form id="authForm" onsubmit="handleAuth(event)">
+                <div class="form-group" id="nameGroup" style="display: none;">
+                    <label class="form-label" data-lang="fullName">نام کامل</label>
+                    <input type="text" class="form-input" id="nameInput" placeholder="نام خود را وارد کنید">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" data-lang="email">ایمیل</label>
+                    <input type="email" class="form-input" id="emailInput" placeholder="email@example.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" data-lang="password">رمز عبور</label>
+                    <input type="password" class="form-input" id="passwordInput" placeholder="حداقل 6 کاراکتر" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <span id="authBtnText">ورود</span>
+                </button>
+                
+                <p style="text-align: center; margin-top: 1rem; opacity: 0.8;">
+                    <span id="authSwitchText">حساب کاربری ندارید؟</span>
+                    <a href="#" onclick="switchAuthMode()" style="color: var(--primary);" id="authSwitchLink">ثبت نام کنید</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Landing Page -->
+    <div class="landing-container" id="landingContainer">
+        <div class="hero-content">
+            <h1 class="hero-title" data-lang="heroTitle">به NOB-AI خوش آمدید</h1>
+            <p class="hero-subtitle" data-lang="heroSubtitle">پیشرفته‌ترین پلتفرم هوش مصنوعی چندمدلی برای فارسی و انگلیسی</p>
+            
+            <div style="margin-bottom: 3rem;">
+                <button class="btn btn-primary" onclick="showAuthModal('register')" style="margin: 0.5rem;">
+                    <i class="fas fa-rocket"></i>
+                    <span data-lang="getStarted">شروع کنید</span>
+                </button>
+                <button class="btn btn-secondary" onclick="showDemo()" style="margin: 0.5rem;">
+                    <i class="fas fa-play"></i>
+                    <span data-lang="watchDemo">مشاهده دمو</span>
+                </button>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 data-lang="feature1Title">هوش چندمدلی</h3>
+                    <p data-lang="feature1Desc">دسترسی به GPT-4، Claude، Grok</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-language"></i>
+                    </div>
+                    <h3 data-lang="feature2Title">دوزبانه کامل</h3>
+                    <p data-lang="feature2Desc">پشتیبانی بومی فارسی و انگلیسی</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 data-lang="feature3Title">انتخاب هوشمند</h3>
+                    <p data-lang="feature3Desc">بهترین مدل برای هر کار</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 data-lang="feature4Title">امنیت بالا</h3>
+                    <p data-lang="feature4Desc">رمزنگاری end-to-end</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container" id="appContainer">
+        <!-- Stats Dashboard -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(72, 187, 120, 0.2); color: var(--success);">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="chatCount">0</h3>
+                    <p data-lang="totalChats">مجموع گفتگوها</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(102, 126, 234, 0.2); color: var(--primary);">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="modelUsed">Auto</h3>
+                    <p data-lang="currentModel">مدل فعلی</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(237, 137, 54, 0.2); color: var(--warning);">
+                    <i class="fas fa-tachometer-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="avgResponse">2.3s</h3>
+                    <p data-lang="avgResponseTime">میانگین زمان پاسخ</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(118, 75, 162, 0.2); color: var(--secondary);">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="accuracy">89%</h3>
+                    <p data-lang="accuracy">دقت تحلیل</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <div>
+                    <h2 data-lang="aiAssistant">دستیار هوشمند NOB-AI</h2>
+                    <p style="opacity: 0.7; font-size: 0.9rem;" data-lang="askAnything">هر سوالی دارید بپرسید...</p>
+                </div>
+                <div class="model-selector">
+                    <div class="model-badge auto">
+                        <i class="fas fa-magic"></i>
+                        <span data-lang="autoSelect">انتخاب خودکار</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
+                    <p data-lang="welcomeMessage">سلام! من دستیار هوشمند NOB-AI هستم. می‌توانم در کدنویسی، تحلیل، ترجمه و بسیاری موارد دیگر به شما کمک کنم. چطور می‌توانم کمکتان کنم؟</p>
+                    <div class="message-meta">
+                        <span><i class="fas fa-robot"></i> AI</span>
+                        <span><i class="fas fa-clock"></i> <span id="currentTime">الآن</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        class="chat-input" 
+                        id="chatInput" 
+                        placeholder="پیام خود را بنویسید..."
+                        rows="1"
+                        onkeydown="handleChatKeydown(event)"
+                        oninput="autoResizeTextarea(this)"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Language translations
+        const translations = {
+            fa: {
+                home: 'خانه',
+                chat: 'چت',
+                about: 'درباره ما',
+                login: 'ورود',
+                logout: 'خروج',
+                fullName: 'نام کامل',
+                email: 'ایمیل',
+                password: 'رمز عبور',
+                heroTitle: 'به NOB-AI خوش آمدید',
+                heroSubtitle: 'پیشرفته‌ترین پلتفرم هوش مصنوعی چندمدلی برای فارسی و انگلیسی',
+                getStarted: 'شروع کنید',
+                watchDemo: 'مشاهده دمو',
+                feature1Title: 'هوش چندمدلی',
+                feature1Desc: 'دسترسی به GPT-4، Claude، Grok',
+                feature2Title: 'دوزبانه کامل',
+                feature2Desc: 'پشتیبانی بومی فارسی و انگلیسی',
+                feature3Title: 'انتخاب هوشمند',
+                feature3Desc: 'بهترین مدل برای هر کار',
+                feature4Title: 'امنیت بالا',
+                feature4Desc: 'رمزنگاری end-to-end',
+                totalChats: 'مجموع گفتگوها',
+                currentModel: 'مدل فعلی',
+                avgResponseTime: 'میانگین زمان پاسخ',
+                accuracy: 'دقت تحلیل',
+                aiAssistant: 'دستیار هوشمند NOB-AI',
+                askAnything: 'هر سوالی دارید بپرسید...',
+                autoSelect: 'انتخاب خودکار',
+                welcomeMessage: 'سلام! من دستیار هوشمند NOB-AI هستم. می‌توانم در کدنویسی، تحلیل، ترجمه و بسیاری موارد دیگر به شما کمک کنم. چطور می‌توانم کمکتان کنم؟',
+                typeMessage: 'پیام خود را بنویسید...',
+                loginTitle: 'ورود به سیستم',
+                registerTitle: 'ثبت نام در سیستم',
+                loginBtn: 'ورود',
+                registerBtn: 'ثبت نام',
+                noAccount: 'حساب کاربری ندارید؟',
+                hasAccount: 'حساب کاربری دارید؟',
+                registerLink: 'ثبت نام کنید',
+                loginLink: 'وارد شوید'
+            },
+            en: {
+                home: 'Home',
+                chat: 'Chat',
+                about: 'About',
+                login: 'Login',
+                logout: 'Logout',
+                fullName: 'Full Name',
+                email: 'Email',
+                password: 'Password',
+                heroTitle: 'Welcome to NOB-AI',
+                heroSubtitle: 'The most advanced multi-model AI platform for Persian and English',
+                getStarted: 'Get Started',
+                watchDemo: 'Watch Demo',
+                feature1Title: 'Multi-Model AI',
+                feature1Desc: 'Access to GPT-4, Claude, Grok',
+                feature2Title: 'Fully Bilingual',
+                feature2Desc: 'Native Persian and English support',
+                feature3Title: 'Smart Selection',
+                feature3Desc: 'Best model for each task',
+                feature4Title: 'High Security',
+                feature4Desc: 'End-to-end encryption',
+                totalChats: 'Total Chats',
+                currentModel: 'Current Model',
+                avgResponseTime: 'Avg Response Time',
+                accuracy: 'Analysis Accuracy',
+                aiAssistant: 'NOB-AI Smart Assistant',
+                askAnything: 'Ask me anything...',
+                autoSelect: 'Auto Select',
+                welcomeMessage: 'Hello! I\'m NOB-AI smart assistant. I can help you with coding, analysis, translation, and many other tasks. How can I help you today?',
+                typeMessage: 'Type your message...',
+                loginTitle: 'Login to System',
+                registerTitle: 'Register Account',
+                loginBtn: 'Login',
+                registerBtn: 'Register',
+                noAccount: 'Don\'t have an account?',
+                hasAccount: 'Already have an account?',
+                registerLink: 'Sign up',
+                loginLink: 'Sign in'
+            }
+        };
+
+        // Global variables
+        let currentLang = 'fa';
+        let isLoggedIn = false;
+        let authMode = 'login';
+        let messageCount = 0;
+        let token = localStorage.getItem('token');
+
+        // Initialize
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hide');
+            }, 1000);
+
+            // Check if user is logged in
+            if (token) {
+                isLoggedIn = true;
+                updateUIForAuth();
+            }
+
+            // Update current time
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 60000);
+        });
+
+        // Language switching
+        function toggleLanguage() {
+            currentLang = currentLang === 'fa' ? 'en' : 'fa';
+            document.body.classList.toggle('en', currentLang === 'en');
+            document.getElementById('langText').textContent = currentLang.toUpperCase();
+            
+            // Update all translations
+            document.querySelectorAll('[data-lang]').forEach(elem => {
+                const key = elem.getAttribute('data-lang');
+                if (translations[currentLang][key]) {
+                    elem.textContent = translations[currentLang][key];
+                }
+            });
+
+            // Update placeholders
+            document.getElementById('chatInput').placeholder = translations[currentLang].typeMessage;
+            
+            // Update HTML attributes
+            document.documentElement.lang = currentLang;
+            document.documentElement.dir = currentLang === 'fa' ? 'rtl' : 'ltr';
+        }
+
+        // Navigation
+        function toggleMenu() {
+            document.getElementById('navMenu').classList.toggle('active');
+        }
+
+        function showLanding() {
+            document.getElementById('landingContainer').classList.remove('hide');
+            document.getElementById('appContainer').classList.remove('show');
+            toggleMenu();
+        }
+
+        function showChat() {
+            if (!isLoggedIn) {
+                showAuthModal('login');
+                return;
+            }
+            document.getElementById('landingContainer').classList.add('hide');
+            document.getElementById('appContainer').classList.add('show');
+            toggleMenu();
+        }
+
+        // Auth Modal
+        function showAuthModal(mode) {
+            authMode = mode;
+            const modal = document.getElementById('authModal');
+            const title = document.getElementById('authTitle');
+            const nameGroup = document.getElementById('nameGroup');
+            const btnText = document.getElementById('authBtnText');
+            const switchText = document.getElementById('authSwitchText');
+            const switchLink = document.getElementById('authSwitchLink');
+
+            if (mode === 'login') {
+                title.textContent = translations[currentLang].loginTitle;
+                nameGroup.style.display = 'none';
+                btnText.textContent = translations[currentLang].loginBtn;
+                switchText.textContent = translations[currentLang].noAccount + ' ';
+                switchLink.textContent = translations[currentLang].registerLink;
+            } else {
+                title.textContent = translations[currentLang].registerTitle;
+                nameGroup.style.display = 'block';
+                btnText.textContent = translations[currentLang].registerBtn;
+                switchText.textContent = translations[currentLang].hasAccount + ' ';
+                switchLink.textContent = translations[currentLang].loginLink;
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.remove('show');
+            document.getElementById('authForm').reset();
+        }
+
+        function switchAuthMode() {
+            authMode = authMode === 'login' ? 'register' : 'login';
+            showAuthModal(authMode);
+        }
+
+        // Authentication
+        async function handleAuth(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const name = document.getElementById('nameInput').value;
+
+            try {
+                const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+                const body = authMode === 'login' 
+                    ? { email, password }
+                    : { email, password, name };
+
+                const response = await fetch(`http://localhost:8000${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    token = data.token || 'mock-jwt-token';
+                    localStorage.setItem('token', token);
+                    isLoggedIn = true;
+                    updateUIForAuth();
+                    closeAuthModal();
+                    showChat();
+                } else {
+                    alert(data.message || 'خطا در احراز هویت');
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                // Mock successful auth for demo
+                token = 'mock-jwt-token';
+                localStorage.setItem('token', token);
+                isLoggedIn = true;
+                updateUIForAuth();
+                closeAuthModal();
+                showChat();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            token = null;
+            isLoggedIn = false;
+            updateUIForAuth();
+            showLanding();
+        }
+
+        function updateUIForAuth() {
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const chatLink = document.getElementById('chatLink');
+
+            if (isLoggedIn) {
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'flex';
+                chatLink.style.display = 'flex';
+            } else {
+                loginBtn.style.display = 'flex';
+                logoutBtn.style.display = 'none';
+                chatLink.style.display = 'none';
+            }
+        }
+
+        // Chat functionality
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            autoResizeTextarea(input);
+
+            // Disable send button
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('http://localhost:8000/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        context: getLastMessages()
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Remove typing indicator
+                removeTypingIndicator();
+
+                if (response.ok && data.success) {
+                    // Add AI response with metadata
+                    addMessage(data.response, 'ai', data.metadata);
+                    
+                    // Update stats
+                    updateStats(data.metadata);
+                } else {
+                    addMessage(data.message || 'متأسفانه خطایی رخ داد. لطفاً دوباره تلاش کنید.', 'ai');
+                }
+            } catch (error) {
+                console.error('Chat error:', error);
+                removeTypingIndicator();
+                
+                // Mock response for demo
+                setTimeout(() => {
+                    const mockResponses = {
+                        fa: [
+                            'این یک پاسخ آزمایشی از NOB-AI است. سیستم در حال حاضر در حالت دمو قرار دارد.',
+                            'من می‌توانم به شما در کدنویسی، تحلیل داده، ترجمه و بسیاری از کارهای دیگر کمک کنم.',
+                            'برای استفاده از قابلیت‌های کامل، لطفاً API key های مورد نیاز را در backend تنظیم کنید.'
+                        ],
+                        en: [
+                            'This is a demo response from NOB-AI. The system is currently in demo mode.',
+                            'I can help you with coding, data analysis, translation, and many other tasks.',
+                            'To use full capabilities, please configure the required API keys in the backend.'
+                        ]
+                    };
+                    
+                    const responses = mockResponses[currentLang];
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    
+                    addMessage(randomResponse, 'ai', {
+                        model: 'mock',
+                        task_type: 'chat',
+                        language: currentLang,
+                        confidence: 0.95
+                    });
+                }, 1000);
+            }
+
+            // Re-enable send button
+            sendBtn.disabled = false;
+        }
+
+        function addMessage(text, sender, metadata = null) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const messageText = document.createElement('p');
+            messageText.textContent = text;
+            messageDiv.appendChild(messageText);
+
+            if (metadata || sender === 'ai') {
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'message-meta';
+                
+                metaDiv.innerHTML = `
+                    <span><i class="fas fa-${sender === 'user' ? 'user' : 'robot'}"></i> ${sender === 'user' ? 'You' : 'AI'}</span>
+                    <span><i class="fas fa-clock"></i> ${getCurrentTime()}</span>
+                    ${metadata ? `
+                        <span><i class="fas fa-microchip"></i> ${metadata.model || 'auto'}</span>
+                        <span><i class="fas fa-chart-pie"></i> ${Math.round((metadata.confidence || 0.9) * 100)}%</span>
+                    ` : ''}
+                `;
+                
+                messageDiv.appendChild(metaDiv);
+            }
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Update message count
+            messageCount++;
+            document.getElementById('chatCount').textContent = messageCount;
+        }
+
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message ai typing-indicator';
+            typingDiv.id = 'typingIndicator';
+            
+            typingDiv.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function getLastMessages() {
+            const messages = document.querySelectorAll('.message:not(.typing-indicator)');
+            const context = [];
+            
+            // Get last 10 messages for context
+            const start = Math.max(0, messages.length - 10);
+            for (let i = start; i < messages.length; i++) {
+                const msg = messages[i];
+                const text = msg.querySelector('p').textContent;
+                const role = msg.classList.contains('user') ? 'user' : 'assistant';
+                context.push({ role, content: text });
+            }
+            
+            return context;
+        }
+
+        function updateStats(metadata) {
+            if (metadata) {
+                if (metadata.model) {
+                    document.getElementById('modelUsed').textContent = metadata.model;
+                }
+                if (metadata.response_time) {
+                    document.getElementById('avgResponse').textContent = `${metadata.response_time}s`;
+                }
+                if (metadata.confidence) {
+                    document.getElementById('accuracy').textContent = `${Math.round(metadata.confidence * 100)}%`;
+                }
+            }
+        }
+
+        // Utility functions
+        function handleChatKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
+        function updateCurrentTime() {
+            document.getElementById('currentTime').textContent = getCurrentTime();
+        }
+
+        function showDemo() {
+            alert(currentLang === 'fa' 
+                ? 'ویدیو دمو به زودی اضافه خواهد شد!' 
+                : 'Demo video coming soon!');
+        }
+
+        // Handle clicks outside modal
+        window.onclick = function(event) {
+            const modal = document.getElementById('authModal');
+            if (event.target === modal) {
+                closeAuthModal();
+            }
+        }
+
+        // Responsive menu close on resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.getElementById('navMenu').classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
